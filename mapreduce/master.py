@@ -1,7 +1,7 @@
 """Master process implementation for the MPI MapReduce framework (Stage 3)."""
 from __future__ import annotations
 
-import os
+import array
 import time
 from collections import deque
 from dataclasses import dataclass, field
@@ -9,9 +9,10 @@ from typing import Any, Callable, Deque, Dict, List, Optional, Sequence, Set, Tu
 
 from mpi4py import MPI
 
-from . import api, protocol
+from . import api
 from .protocol import (
     Heartbeat,
+    MASTER,
     MapTask,
     ShufflePlan,
     Shutdown,
@@ -40,6 +41,24 @@ class MasterMetrics:
     redispatched_tasks: int = 0
     recovery_seconds: float = 0.0
 
+    def to_dict(self, job_name: str, num_workers: int) -> Dict[str, Any]:
+        return {
+            "engine": "mpi",
+            "job": job_name,
+            "workers": num_workers,
+            "input_bytes": self.input_bytes,
+            "num_splits": self.num_splits,
+            "total_seconds": round(self.total_seconds, 6),
+            "map_seconds": round(self.map_seconds, 6),
+            "shuffle_seconds": round(self.shuffle_seconds, 6),
+            "reduce_seconds": round(self.reduce_seconds, 6),
+            "comp_seconds": round(self.comp_seconds, 6),
+            "comm_seconds": round(self.comm_seconds, 6),
+            "failed_ranks": sorted(self.failed_ranks),
+            "redispatched_tasks": self.redispatched_tasks,
+            "recovery_seconds": round(self.recovery_seconds, 6),
+        }
+
 
 def _resolve_splitter(
     make_splits_fn: Optional[Callable[[Sequence[str], int], List[api.InputSplit]]],
@@ -56,7 +75,7 @@ def _resolve_splitter(
 
 
 class Master:
-    """Rank-0 coordinator that partitions input, schedules Map tasks, and tracks workers."""
+    """Rank-0 coordinator that partitions input, schedules Map tasks, and drives Shuffle/Reduce."""
 
     def __init__(
         self,
@@ -168,7 +187,82 @@ class Master:
         self.metrics.map_seconds = time.perf_counter() - t0
         return dict(self.completed)
 
+    def build_shuffle_plan(self) -> ShufflePlan:
+        """Build the ShufflePlan listing sorted alive workers and accepted task_ids per worker."""
+        alive_sorted = tuple(sorted(self.alive_workers))
+        by_worker: Dict[int, List[int]] = {w: [] for w in alive_sorted}
+        for task_id, worker_rank in sorted(self.completed.items()):
+            if worker_rank in by_worker:
+                by_worker[worker_rank].append(task_id)
+        accepted = {w: tuple(tids) for w, tids in by_worker.items()}
+        return ShufflePlan(alive=alive_sorted, accepted=accepted)
+
+    def run_shuffle_and_reduce(self) -> List[api.KeyValue]:
+        """Coordinate the sub-communicator Shuffle (Alltoallv) and gather Reduce outputs."""
+        t_shuf0 = time.perf_counter()
+        plan = self.build_shuffle_plan()
+        for w in plan.alive:
+            self._send_async(plan, dest=w, tag=TAG_CONTROL)
+
+        members = [MASTER] + list(plan.alive)
+        world_group = self.comm.Get_group()
+        sub_group = world_group.Incl(members)
+        sub_comm = self.comm.Create_group(sub_group, tag=TAG_CONTROL)
+        sub_group.Free()
+        world_group.Free()
+
+        try:
+            sub_size = sub_comm.Get_size()
+            send_counts = array.array("i", [0] * sub_size)
+            recv_counts = array.array("i", [0] * sub_size)
+            sub_comm.Alltoall([send_counts, MPI.INT], [recv_counts, MPI.INT])
+
+            send_displs = array.array("i", [0] * sub_size)
+            recv_displs = array.array("i", [0] * sub_size)
+            send_buf = b""
+            recv_buf = bytearray(sum(recv_counts))
+            sub_comm.Alltoallv(
+                [send_buf, send_counts, send_displs, MPI.BYTE],
+                [recv_buf, recv_counts, recv_displs, MPI.BYTE],
+            )
+            sub_comm.Barrier()
+            self.metrics.shuffle_seconds = time.perf_counter() - t_shuf0
+
+            t_red0 = time.perf_counter()
+            gathered = sub_comm.gather(None, root=0)
+            self.metrics.reduce_seconds = time.perf_counter() - t_red0
+
+            final_pairs: List[api.KeyValue] = []
+            total_comp = 0.0
+            total_comm = 0.0
+            for item in gathered or []:
+                if item is None:
+                    continue
+                pairs, w_comp, w_comm = item
+                final_pairs.extend(pairs)
+                total_comp += float(w_comp)
+                total_comm += float(w_comm)
+
+            self.metrics.comp_seconds = total_comp
+            self.metrics.comm_seconds = total_comm
+            return final_pairs
+        finally:
+            if sub_comm != MPI.COMM_NULL:
+                sub_comm.Free()
+
     def shutdown_workers(self, reason: str = "done") -> None:
         """Send Shutdown to all worker ranks."""
         for w in self.all_workers:
             self._send_async(Shutdown(reason=reason), dest=w, tag=TAG_CONTROL)
+
+    def run(self, output_path: str) -> MasterMetrics:
+        """Execute full Map -> Shuffle -> Reduce -> Write pipeline on rank 0."""
+        t0 = time.perf_counter()
+        self.run_map_phase()
+        final_pairs = self.run_shuffle_and_reduce()
+        self.shutdown_workers(reason="done")
+        # Drain any trailing heartbeats that were in flight before ShufflePlan arrived
+        self._poll_messages()
+        api.write_output(final_pairs, output_path)
+        self.metrics.total_seconds = time.perf_counter() - t0
+        return self.metrics

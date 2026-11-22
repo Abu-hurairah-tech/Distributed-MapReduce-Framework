@@ -1,7 +1,9 @@
 """Worker process implementation for the MPI MapReduce framework (Stage 3)."""
 from __future__ import annotations
 
+import array
 import os
+import pickle
 import time
 from dataclasses import dataclass
 from typing import Callable, Dict, Iterator, List, Optional, Tuple
@@ -44,7 +46,7 @@ def _resolve_read_split(
 
 
 class Worker:
-    """Rank 1..N-1 worker that executes Map tasks, runs the local Combiner, and stores output per task_id."""
+    """Rank 1..N-1 worker that executes Map tasks, runs Shuffle (Alltoallv), and reduces its partition."""
 
     def __init__(
         self,
@@ -159,3 +161,101 @@ class Worker:
             else:
                 self._maybe_send_heartbeat(task_id=None)
                 time.sleep(0.0005)
+
+    def run_shuffle_and_reduce(self, plan: ShufflePlan) -> List[api.KeyValue]:
+        """Participate in the sub-communicator Alltoallv shuffle, run Reducer, and gather to master."""
+        if self.rank not in plan.alive:
+            return []
+
+        num_partitions = len(plan.alive)
+        if self.rank in plan.accepted:
+            accepted_tids = plan.accepted[self.rank]
+        else:
+            accepted_tids = tuple(sorted(self.task_outputs.keys()))
+
+        buckets: List[List[api.KeyValue]] = [[] for _ in range(num_partitions)]
+        for tid in accepted_tids:
+            for k, v in self.task_outputs.get(tid, ()):
+                p = api.partition(k, num_partitions)
+                buckets[p].append((k, v))
+
+        t_comm = time.perf_counter()
+        members = [MASTER] + list(plan.alive)
+        world_group = self.comm.Get_group()
+        sub_group = world_group.Incl(members)
+        sub_comm = self.comm.Create_group(sub_group, tag=TAG_CONTROL)
+        sub_group.Free()
+        world_group.Free()
+
+        try:
+            sub_size = sub_comm.Get_size()
+            # Sub-communicator rank 0 is master (empty buffer); ranks 1..R are alive workers 0..R-1
+            chunks: List[bytes] = [b""]
+            for b in buckets:
+                chunks.append(pickle.dumps(b, protocol=pickle.HIGHEST_PROTOCOL) if b else b"")
+
+            send_counts = array.array("i", (len(c) for c in chunks))
+            recv_counts = array.array("i", [0] * sub_size)
+            sub_comm.Alltoall([send_counts, MPI.INT], [recv_counts, MPI.INT])
+
+            send_displs = array.array("i", [0] * sub_size)
+            recv_displs = array.array("i", [0] * sub_size)
+            for i in range(1, sub_size):
+                send_displs[i] = send_displs[i - 1] + send_counts[i - 1]
+                recv_displs[i] = recv_displs[i - 1] + recv_counts[i - 1]
+
+            send_buf = b"".join(chunks)
+            recv_buf = bytearray(sum(recv_counts))
+            sub_comm.Alltoallv(
+                [send_buf, send_counts, send_displs, MPI.BYTE],
+                [recv_buf, recv_counts, recv_displs, MPI.BYTE],
+            )
+            sub_comm.Barrier()
+
+            received_pairs: List[api.KeyValue] = []
+            mv = memoryview(recv_buf)
+            for i in range(sub_size):
+                cnt = recv_counts[i]
+                if cnt > 0:
+                     disp = recv_displs[i]
+                     received_pairs.extend(pickle.loads(mv[disp : disp + cnt]))
+            self.stats.comm_seconds += time.perf_counter() - t_comm
+
+            t_comp = time.perf_counter()
+            ctx = api.JobContext(
+                job_name=self.job.name,
+                rank=self.rank,
+                num_partitions=num_partitions,
+            )
+            reducer = self.job.reducer()
+            reduced_pairs = api.run_reducer(reducer, received_pairs, ctx)
+            self.stats.comp_seconds += time.perf_counter() - t_comp
+
+            t_comm = time.perf_counter()
+            # Estimate pickle overhead of the gathered payload so comm_seconds includes gather serialization
+            _ = len(pickle.dumps(reduced_pairs, protocol=pickle.HIGHEST_PROTOCOL))
+            self.stats.comm_seconds += time.perf_counter() - t_comm
+            payload = (reduced_pairs, self.stats.comp_seconds, self.stats.comm_seconds)
+            sub_comm.gather(payload, root=0)
+            return reduced_pairs
+        finally:
+            if sub_comm != MPI.COMM_NULL:
+                sub_comm.Free()
+
+    def wait_for_shutdown(self) -> Shutdown:
+        """Block until the master sends a Shutdown message."""
+        if isinstance(self._buffered_control, Shutdown):
+            return self._buffered_control
+        while True:
+            msg = self.comm.recv(source=MASTER, tag=TAG_CONTROL)
+            if isinstance(msg, Shutdown):
+                return msg
+
+    def run(self) -> None:
+        """Execute full Worker lifecycle: Map loop -> Shuffle & Reduce -> Wait for Shutdown."""
+        ctrl = self.run_map_loop()
+        if isinstance(ctrl, ShufflePlan):
+            self.run_shuffle_and_reduce(ctrl)
+            self.wait_for_shutdown()
+        elif isinstance(ctrl, Shutdown):
+            return
