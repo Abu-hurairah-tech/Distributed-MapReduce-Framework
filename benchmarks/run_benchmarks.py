@@ -242,19 +242,21 @@ def locate_mpiexec(python_exe: str, explicit: Optional[str] = None) -> str:
 
 
 def choose_split_size(target_size_mb: int, explicit_split_size: Optional[int]) -> int:
-    """Choose a split size that ensures enough splits for load balancing & fault recovery."""
+    """Choose a split size that ensures enough splits for load balancing & fault recovery.
+
+    Caps automatic split size at 2 MiB so each split's synchronous combiner pass
+    completes well under the 3.0s heartbeat timeout tau even under 8-worker contention.
+    """
     if explicit_split_size is not None and explicit_split_size > 0:
         return explicit_split_size
     total_bytes = max(1, target_size_mb) * 1024 * 1024
-    if target_size_mb >= 256:
-        return 16 * 1024 * 1024  # 16 MiB
-    # Aim for roughly 16-24 splits so up to 8 workers get >= 2 tasks each
+    # Aim for roughly 16-24 splits, capped at 2 MiB per split
     raw = max(64 * 1024, total_bytes // 16)
-    # Snap to nearest clean power-of-two multiple of 64 KiB up to 16 MiB
+    max_auto = 2 * 1024 * 1024
     power = 64 * 1024
-    while power * 2 <= raw and power < 16 * 1024 * 1024:
+    while power * 2 <= raw and power < max_auto:
         power *= 2
-    return power
+    return min(power, max_auto)
 
 
 def dir_size_bytes(path: Path) -> int:
@@ -309,9 +311,16 @@ def ensure_dataset(
     ]
     print(f"[dataset] Generating {size_mb} MB ({source}, seed={seed}) -> {out_dir} ...")
     t0 = time.perf_counter()
+    run_env = os.environ.copy()
+    # On Intel 12th/13th/14th-gen hybrid CPUs (P-cores + E-cores), Intel MPI's
+    # default I_MPI_PIN_DOMAIN=auto pins rank 0 (idle master) to the P-core domain
+    # and rank 1 (the sole worker in -n 2) to the E-core domain. Disabling forced
+    # static pinning lets Windows Thread Director schedule active workers onto P-cores.
+    run_env.setdefault("I_MPI_PIN", "0")
     proc = subprocess.run(
         cmd,
         cwd=str(REPO_ROOT),
+        env=run_env,
         capture_output=True,
         text=True,
         check=False,
@@ -457,9 +466,16 @@ def run_single_invocation(
         raise ValueError(f"Unknown engine: {engine}")
 
     t0 = time.perf_counter()
+    run_env = os.environ.copy()
+    # On Intel 12th/13th/14th-gen hybrid CPUs (P-cores + E-cores), Intel MPI's
+    # default I_MPI_PIN_DOMAIN=auto pins rank 0 (idle master) to the P-core domain
+    # and rank 1 (the sole worker in -n 2) to the E-core domain. Disabling forced
+    # static pinning lets Windows Thread Director schedule active workers onto P-cores.
+    run_env.setdefault("I_MPI_PIN", "0")
     proc = subprocess.run(
         cmd,
         cwd=str(REPO_ROOT),
+        env=run_env,
         capture_output=True,
         text=True,
         check=False,
@@ -1293,8 +1309,16 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--seq-use-combiner",
+        dest="seq_use_combiner",
         action="store_true",
-        help="Also enable --use-combiner on baseline/run_sequential.py.",
+        default=True,
+        help="Enable --use-combiner on baseline/run_sequential.py so T1 and Tp run identical map+combine+reduce logic (default: True).",
+    )
+    parser.add_argument(
+        "--no-seq-combiner",
+        dest="seq_use_combiner",
+        action="store_false",
+        help="Run baseline/run_sequential.py without --use-combiner.",
     )
     parser.add_argument(
         "--no-verify",

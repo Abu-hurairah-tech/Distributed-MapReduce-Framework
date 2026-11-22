@@ -1,0 +1,5 @@
+experiment,timestamp,repeat,job,engine,mpi_procs,workers,target_size_mb,input_bytes,split_size_bytes,num_splits,combiner,injected_fail_rank,injected_fail_after,timeout_sec,total_seconds,map_seconds,shuffle_seconds,reduce_seconds,comp_seconds,comm_seconds,failed_ranks,redispatched_tasks,recovery_seconds,cpu_model,physical_cores,logical_threads,ram_gb
+profile,2026-11-22T15:11:50+00:00,1,wordfreq,sequential,1,1,24,25165824,1048576,32,True,,,,10.144683,10.107944,0.0,0.019865,10.127809,0.0,,0,0.0,13th Gen Intel(R) Core(TM) i7-1355U,10,12,7.53
+profile,2026-11-22T15:11:55+00:00,1,wordfreq,mpi,5,4,24,25165824,1048576,32,True,,,,3.881176,3.845201,0.019967,0.009808,12.447311,0.053228,,0,0.0,13th Gen Intel(R) Core(TM) i7-1355U,10,12,7.53
+profile,2026-11-22T15:12:04+00:00,1,invindex,sequential,1,1,24,25165824,1048576,32,True,,,,8.517992,8.481235,0.0,0.016593,8.497828,0.0,,0,0.0,13th Gen Intel(R) Core(TM) i7-1355U,10,12,7.53
+profile,2026-11-22T15:12:08+00:00,1,invindex,mpi,5,4,24,25165824,1048576,32,True,,,,2.926301,2.882729,0.013559,0.008572,9.231259,0.026754,,0,0.0,13th Gen Intel(R) Core(TM) i7-1355U,10,12,7.53

@@ -1,0 +1,145 @@
+job,engine,mpi_procs,workers,role,rank,rank_total_tt,func_rank,module,line,function,ncalls,primitive_calls,tottime,cumtime,pct_tottime,pct_cumtime
+wordfreq,sequential,1,1,sequential,0,9.697294,1,mapreduce/api.py,118,group_by_key,15512,15512,2.208802,4.263253,22.78,43.96
+wordfreq,sequential,1,1,sequential,0,9.697294,2,~,0,<method 'extend' of 'list' objects>,335692,335692,1.329843,3.957726,13.71,40.81
+wordfreq,sequential,1,1,sequential,0,9.697294,3,~,0,<method 'findall' of 're.Pattern' objects>,320149,320149,1.256746,1.256746,12.96,12.96
+wordfreq,sequential,1,1,sequential,0,9.697294,4,~,0,<method 'setdefault' of 'dict' objects>,4710049,4710049,1.145261,1.145261,11.81,11.81
+wordfreq,sequential,1,1,sequential,0,9.697294,5,jobs/word_frequency.py,16,map,5015858,5015858,0.98835,2.589841,10.19,26.71
+wordfreq,sequential,1,1,sequential,0,9.697294,6,~,0,<method 'append' of 'list' objects>,4710081,4710081,0.90603,0.90603,9.34,9.34
+wordfreq,sequential,1,1,sequential,0,9.697294,7,mapreduce/splitter.py,73,read_split,320181,320181,0.532878,1.432178,5.5,14.77
+wordfreq,sequential,1,1,sequential,0,9.697294,8,mapreduce/splitter.py,65,_strip_newline,320149,320149,0.264911,0.429155,2.73,4.43
+wordfreq,sequential,1,1,sequential,0,9.697294,9,~,0,<method 'readline' of '_io.BufferedReader' objects>,320149,320149,0.249197,0.249197,2.57,2.57
+wordfreq,sequential,1,1,sequential,0,9.697294,10,jobs/word_frequency.py,11,tokenize,320149,320149,0.235762,1.601491,2.43,16.51
+wordfreq,sequential,1,1,sequential,0,9.697294,11,~,0,<method 'endswith' of 'bytes' objects>,640298,640298,0.164245,0.164245,1.69,1.69
+wordfreq,sequential,1,1,sequential,0,9.697294,12,~,0,<method 'decode' of 'bytes' objects>,320149,320149,0.134825,0.134825,1.39,1.39
+wordfreq,mpi,5,4,master,0,3.902513,1,~,0,<built-in method time.sleep>,3207,3207,3.555479,3.555479,91.11,91.11
+wordfreq,mpi,5,4,master,0,3.902513,2,mapreduce/master.py,148,_poll_messages,3256,3256,0.180996,0.181199,4.64,4.64
+wordfreq,mpi,5,4,master,0,3.902513,3,mapreduce/master.py,228,run_map_phase,1,1,0.03692,3.845236,0.95,98.53
+wordfreq,mpi,5,4,master,0,3.902513,4,mapreduce/master.py,184,_check_timeouts,3255,3255,0.032178,0.055838,0.82,1.43
+wordfreq,mpi,5,4,master,0,3.902513,5,mapreduce/master.py,256,run_shuffle_and_reduce,1,1,0.029873,0.030198,0.77,0.77
+wordfreq,mpi,5,4,master,0,3.902513,6,~,0,<method 'get' of 'dict' objects>,13055,13055,0.013567,0.013567,0.35,0.35
+wordfreq,mpi,5,4,master,0,3.902513,7,~,0,<built-in method nt.stat>,67,67,0.010923,0.010923,0.28,0.28
+wordfreq,mpi,5,4,master,0,3.902513,8,~,0,<built-in method builtins.sorted>,3261,3261,0.007956,0.008189,0.2,0.21
+wordfreq,mpi,5,4,master,0,3.902513,9,~,0,<built-in method builtins.len>,6569,6569,0.007533,0.007533,0.19,0.19
+wordfreq,mpi,5,4,master,0,3.902513,10,mapreduce/master.py,135,_dispatch_available,3255,3255,0.005373,0.008372,0.14,0.21
+wordfreq,mpi,5,4,master,0,3.902513,11,~,0,<built-in method nt._path_isfile>,64,64,0.005015,0.005015,0.13,0.13
+wordfreq,mpi,5,4,master,0,3.902513,12,mapreduce/master.py,131,_send_async,40,40,0.003234,0.003336,0.08,0.09
+wordfreq,mpi,5,4,worker,1,3.89847,1,mapreduce/api.py,118,group_by_key,3877,3877,0.812035,1.580693,20.83,40.55
+wordfreq,mpi,5,4,worker,1,3.89847,2,~,0,<method 'findall' of 're.Pattern' objects>,79719,79719,0.47117,0.47117,12.09,12.09
+wordfreq,mpi,5,4,worker,1,3.89847,3,~,0,<method 'extend' of 'list' objects>,83591,83591,0.442652,1.395528,11.35,35.8
+wordfreq,mpi,5,4,worker,1,3.89847,4,~,0,<method 'setdefault' of 'dict' objects>,1172265,1172265,0.426263,0.426263,10.93,10.93
+wordfreq,mpi,5,4,worker,1,3.89847,5,jobs/word_frequency.py,16,map,1248323,1248323,0.344852,0.939756,8.85,24.11
+wordfreq,mpi,5,4,worker,1,3.89847,6,~,0,<method 'append' of 'list' objects>,1175882,1175882,0.342604,0.342604,8.79,8.79
+wordfreq,mpi,5,4,worker,1,3.89847,7,mapreduce/worker.py,96,execute_map_task,8,8,0.217647,3.744021,5.58,96.04
+wordfreq,mpi,5,4,worker,1,3.89847,8,mapreduce/splitter.py,73,read_split,79727,79727,0.182662,0.497362,4.69,12.76
+wordfreq,mpi,5,4,worker,1,3.89847,9,mapreduce/splitter.py,65,_strip_newline,79719,79719,0.105871,0.16802,2.72,4.31
+wordfreq,mpi,5,4,worker,1,3.89847,10,jobs/word_frequency.py,11,tokenize,79719,79719,0.084057,0.594904,2.16,15.26
+wordfreq,mpi,5,4,worker,1,3.89847,11,~,0,<method 'readline' of '_io.BufferedReader' objects>,79719,79719,0.067924,0.067924,1.74,1.74
+wordfreq,mpi,5,4,worker,1,3.89847,12,~,0,<built-in method time.sleep>,64,64,0.067041,0.067041,1.72,1.72
+wordfreq,mpi,5,4,worker,2,3.905062,1,mapreduce/api.py,118,group_by_key,3852,3852,0.817136,1.597709,20.93,40.91
+wordfreq,mpi,5,4,worker,2,3.905062,2,~,0,<method 'extend' of 'list' objects>,84067,84067,0.447751,1.367405,11.47,35.02
+wordfreq,mpi,5,4,worker,2,3.905062,3,~,0,<method 'findall' of 're.Pattern' objects>,80220,80220,0.446569,0.446569,11.44,11.44
+wordfreq,mpi,5,4,worker,2,3.905062,4,~,0,<method 'setdefault' of 'dict' objects>,1180262,1180262,0.435905,0.435905,11.16,11.16
+wordfreq,mpi,5,4,worker,2,3.905062,5,~,0,<method 'append' of 'list' objects>,1183863,1183863,0.344457,0.344457,8.82,8.82
+wordfreq,mpi,5,4,worker,2,3.905062,6,jobs/word_frequency.py,16,map,1257073,1257073,0.340032,0.906179,8.71,23.21
+wordfreq,mpi,5,4,worker,2,3.905062,7,mapreduce/worker.py,96,execute_map_task,8,8,0.21075,3.709372,5.4,94.99
+wordfreq,mpi,5,4,worker,2,3.905062,8,mapreduce/splitter.py,73,read_split,80228,80228,0.171772,0.478679,4.4,12.26
+wordfreq,mpi,5,4,worker,2,3.905062,9,mapreduce/splitter.py,65,_strip_newline,80220,80220,0.094986,0.153167,2.43,3.92
+wordfreq,mpi,5,4,worker,2,3.905062,10,~,0,<built-in method time.sleep>,88,88,0.089891,0.089891,2.3,2.3
+wordfreq,mpi,5,4,worker,2,3.905062,11,jobs/word_frequency.py,11,tokenize,80220,80220,0.082634,0.566147,2.12,14.5
+wordfreq,mpi,5,4,worker,2,3.905062,12,~,0,<method 'readline' of '_io.BufferedReader' objects>,80220,80220,0.074701,0.074701,1.91,1.91
+wordfreq,mpi,5,4,worker,3,3.905196,1,mapreduce/api.py,118,group_by_key,3865,3865,0.832704,1.611067,21.32,41.25
+wordfreq,mpi,5,4,worker,3,3.905196,2,~,0,<method 'findall' of 're.Pattern' objects>,80139,80139,0.463015,0.463015,11.86,11.86
+wordfreq,mpi,5,4,worker,3,3.905196,3,~,0,<method 'extend' of 'list' objects>,83999,83999,0.448741,1.380884,11.49,35.36
+wordfreq,mpi,5,4,worker,3,3.905196,4,~,0,<method 'setdefault' of 'dict' objects>,1179330,1179330,0.430137,0.430137,11.01,11.01
+wordfreq,mpi,5,4,worker,3,3.905196,5,~,0,<method 'append' of 'list' objects>,1182950,1182950,0.348452,0.348452,8.92,8.92
+wordfreq,mpi,5,4,worker,3,3.905196,6,jobs/word_frequency.py,16,map,1255952,1255952,0.339686,0.921008,8.7,23.58
+wordfreq,mpi,5,4,worker,3,3.905196,7,mapreduce/worker.py,96,execute_map_task,8,8,0.211396,3.752555,5.41,96.09
+wordfreq,mpi,5,4,worker,3,3.905196,8,mapreduce/splitter.py,73,read_split,80147,80147,0.175677,0.492977,4.5,12.62
+wordfreq,mpi,5,4,worker,3,3.905196,9,mapreduce/splitter.py,65,_strip_newline,80139,80139,0.087983,0.144797,2.25,3.71
+wordfreq,mpi,5,4,worker,3,3.905196,10,~,0,<method 'readline' of '_io.BufferedReader' objects>,80139,80139,0.082497,0.082497,2.11,2.11
+wordfreq,mpi,5,4,worker,3,3.905196,11,jobs/word_frequency.py,11,tokenize,80139,80139,0.080312,0.581323,2.06,14.89
+wordfreq,mpi,5,4,worker,3,3.905196,12,mapreduce/worker.py,152,run_map_loop,1,1,0.069519,3.872116,1.78,99.15
+wordfreq,mpi,5,4,worker,4,3.896636,1,mapreduce/api.py,118,group_by_key,3921,3921,0.796781,1.546783,20.45,39.7
+wordfreq,mpi,5,4,worker,4,3.896636,2,~,0,<method 'findall' of 're.Pattern' objects>,80071,80071,0.465446,0.465446,11.94,11.94
+wordfreq,mpi,5,4,worker,4,3.896636,3,~,0,<method 'extend' of 'list' objects>,83987,83987,0.459738,1.401577,11.8,35.97
+wordfreq,mpi,5,4,worker,4,3.896636,4,~,0,<method 'setdefault' of 'dict' objects>,1178192,1178192,0.418364,0.418364,10.74,10.74
+wordfreq,mpi,5,4,worker,4,3.896636,5,jobs/word_frequency.py,16,map,1254510,1254510,0.34101,0.926266,8.75,23.77
+wordfreq,mpi,5,4,worker,4,3.896636,6,~,0,<method 'append' of 'list' objects>,1181818,1181818,0.331476,0.331476,8.51,8.51
+wordfreq,mpi,5,4,worker,4,3.896636,7,mapreduce/worker.py,96,execute_map_task,8,8,0.209173,3.70714,5.37,95.14
+wordfreq,mpi,5,4,worker,4,3.896636,8,mapreduce/splitter.py,73,read_split,80079,80079,0.185826,0.487473,4.77,12.51
+wordfreq,mpi,5,4,worker,4,3.896636,9,~,0,<built-in method time.sleep>,90,90,0.091591,0.091591,2.35,2.35
+wordfreq,mpi,5,4,worker,4,3.896636,10,mapreduce/splitter.py,65,_strip_newline,80071,80071,0.091295,0.147543,2.34,3.79
+wordfreq,mpi,5,4,worker,4,3.896636,11,jobs/word_frequency.py,11,tokenize,80071,80071,0.080898,0.585256,2.08,15.02
+wordfreq,mpi,5,4,worker,4,3.896636,12,~,0,<method 'readline' of '_io.BufferedReader' objects>,80071,80071,0.076282,0.076282,1.96,1.96
+invindex,sequential,1,1,sequential,0,8.17453,1,mapreduce/api.py,118,group_by_key,15512,15512,1.923941,3.638131,23.54,44.51
+invindex,sequential,1,1,sequential,0,8.17453,2,~,0,<method 'extend' of 'list' objects>,335692,335692,1.10204,3.369036,13.48,41.21
+invindex,sequential,1,1,sequential,0,8.17453,3,~,0,<method 'findall' of 're.Pattern' objects>,320149,320149,1.047839,1.047839,12.82,12.82
+invindex,sequential,1,1,sequential,0,8.17453,4,~,0,<method 'setdefault' of 'dict' objects>,4710049,4710049,0.961128,0.961128,11.76,11.76
+invindex,sequential,1,1,sequential,0,8.17453,5,jobs/inverted_index.py,13,map,5015858,5015858,0.830373,2.187874,10.16,26.76
+invindex,sequential,1,1,sequential,0,8.17453,6,~,0,<method 'append' of 'list' objects>,4710081,4710081,0.749317,0.749317,9.17,9.17
+invindex,sequential,1,1,sequential,0,8.17453,7,mapreduce/splitter.py,73,read_split,320181,320181,0.445607,1.124234,5.45,13.75
+invindex,sequential,1,1,sequential,0,8.17453,8,jobs/word_frequency.py,11,tokenize,320149,320149,0.213279,1.357501,2.61,16.61
+invindex,sequential,1,1,sequential,0,8.17453,9,mapreduce/splitter.py,65,_strip_newline,320149,320149,0.210458,0.345229,2.57,4.22
+invindex,sequential,1,1,sequential,0,8.17453,10,~,0,<method 'readline' of '_io.BufferedReader' objects>,320149,320149,0.151469,0.151469,1.85,1.85
+invindex,sequential,1,1,sequential,0,8.17453,11,~,0,<method 'endswith' of 'bytes' objects>,640298,640298,0.134772,0.134772,1.65,1.65
+invindex,sequential,1,1,sequential,0,8.17453,12,~,0,<method 'decode' of 'bytes' objects>,320149,320149,0.107767,0.107767,1.32,1.32
+invindex,mpi,5,4,master,0,2.960566,1,~,0,<built-in method time.sleep>,2554,2554,2.72374,2.72374,92.0,92.0
+invindex,mpi,5,4,master,0,2.960566,2,mapreduce/master.py,148,_poll_messages,2596,2596,0.09618,0.096339,3.25,3.25
+invindex,mpi,5,4,master,0,2.960566,3,mapreduce/master.py,228,run_map_phase,1,1,0.02379,2.88274,0.8,97.37
+invindex,mpi,5,4,master,0,2.960566,4,mapreduce/master.py,256,run_shuffle_and_reduce,1,1,0.022055,0.022188,0.74,0.75
+invindex,mpi,5,4,master,0,2.960566,5,~,0,<built-in method _io.open>,2,2,0.017918,0.017924,0.61,0.61
+invindex,mpi,5,4,master,0,2.960566,6,mapreduce/master.py,184,_check_timeouts,2595,2595,0.017196,0.0299,0.58,1.01
+invindex,mpi,5,4,master,0,2.960566,7,~,0,<built-in method nt.stat>,67,67,0.010876,0.010876,0.37,0.37
+invindex,mpi,5,4,master,0,2.960566,8,~,0,<built-in method nt._path_isfile>,64,64,0.009647,0.009647,0.33,0.33
+invindex,mpi,5,4,master,0,2.960566,9,~,0,<method 'get' of 'dict' objects>,10415,10415,0.005736,0.005736,0.19,0.19
+invindex,mpi,5,4,master,0,2.960566,10,~,0,<built-in method builtins.sorted>,2601,2601,0.005623,0.005795,0.19,0.2
+invindex,mpi,5,4,master,0,2.960566,11,~,0,<built-in method builtins.len>,5249,5249,0.00426,0.00426,0.14,0.14
+invindex,mpi,5,4,master,0,2.960566,12,mapreduce/master.py,135,_dispatch_available,2595,2595,0.002993,0.004742,0.1,0.16
+invindex,mpi,5,4,worker,1,2.934229,1,mapreduce/api.py,118,group_by_key,3877,3877,0.590744,1.130872,20.13,38.54
+invindex,mpi,5,4,worker,1,2.934229,2,~,0,<method 'findall' of 're.Pattern' objects>,79990,79990,0.340097,0.340097,11.59,11.59
+invindex,mpi,5,4,worker,1,2.934229,3,~,0,<method 'extend' of 'list' objects>,83862,83862,0.335542,1.045495,11.44,35.63
+invindex,mpi,5,4,worker,1,2.934229,4,~,0,<method 'setdefault' of 'dict' objects>,1176904,1176904,0.304786,0.304786,10.39,10.39
+invindex,mpi,5,4,worker,1,2.934229,5,jobs/inverted_index.py,13,map,1253233,1253233,0.255698,0.686889,8.71,23.41
+invindex,mpi,5,4,worker,1,2.934229,6,~,0,<method 'append' of 'list' objects>,1180519,1180519,0.235465,0.235465,8.02,8.02
+invindex,mpi,5,4,worker,1,2.934229,7,mapreduce/worker.py,96,execute_map_task,8,8,0.164342,2.742259,5.6,93.46
+invindex,mpi,5,4,worker,1,2.934229,8,mapreduce/splitter.py,73,read_split,79998,79998,0.136688,0.354109,4.66,12.07
+invindex,mpi,5,4,worker,1,2.934229,9,~,0,<built-in method time.sleep>,117,117,0.121402,0.121402,4.14,4.14
+invindex,mpi,5,4,worker,1,2.934229,10,mapreduce/splitter.py,65,_strip_newline,79990,79990,0.066818,0.111983,2.28,3.82
+invindex,mpi,5,4,worker,1,2.934229,11,jobs/word_frequency.py,11,tokenize,79990,79990,0.061362,0.431191,2.09,14.7
+invindex,mpi,5,4,worker,1,2.934229,12,~,0,<method 'readline' of '_io.BufferedReader' objects>,79990,79990,0.047415,0.047415,1.62,1.62
+invindex,mpi,5,4,worker,2,2.932136,1,mapreduce/api.py,118,group_by_key,3869,3869,0.610091,1.180703,20.81,40.27
+invindex,mpi,5,4,worker,2,2.932136,2,~,0,<method 'extend' of 'list' objects>,83935,83935,0.339475,1.049627,11.58,35.8
+invindex,mpi,5,4,worker,2,2.932136,3,~,0,<method 'findall' of 're.Pattern' objects>,80071,80071,0.337024,0.337024,11.49,11.49
+invindex,mpi,5,4,worker,2,2.932136,4,~,0,<method 'setdefault' of 'dict' objects>,1178137,1178137,0.311237,0.311237,10.61,10.61
+invindex,mpi,5,4,worker,2,2.932136,5,jobs/inverted_index.py,13,map,1254799,1254799,0.260548,0.689891,8.89,23.53
+invindex,mpi,5,4,worker,2,2.932136,6,~,0,<method 'append' of 'list' objects>,1181753,1181753,0.259113,0.259113,8.84,8.84
+invindex,mpi,5,4,worker,2,2.932136,7,mapreduce/worker.py,96,execute_map_task,8,8,0.160831,2.800191,5.49,95.5
+invindex,mpi,5,4,worker,2,2.932136,8,mapreduce/splitter.py,73,read_split,80079,80079,0.131223,0.362596,4.48,12.37
+invindex,mpi,5,4,worker,2,2.932136,9,mapreduce/splitter.py,65,_strip_newline,80071,80071,0.073999,0.119064,2.52,4.06
+invindex,mpi,5,4,worker,2,2.932136,10,~,0,<built-in method time.sleep>,63,63,0.065152,0.065152,2.22,2.22
+invindex,mpi,5,4,worker,2,2.932136,11,jobs/word_frequency.py,11,tokenize,80071,80071,0.063795,0.429343,2.18,14.64
+invindex,mpi,5,4,worker,2,2.932136,12,~,0,<method 'readline' of '_io.BufferedReader' objects>,80071,80071,0.052416,0.052416,1.79,1.79
+invindex,mpi,5,4,worker,3,2.932254,1,mapreduce/api.py,118,group_by_key,3854,3854,0.575471,1.118318,19.63,38.14
+invindex,mpi,5,4,worker,3,2.932254,2,~,0,<method 'extend' of 'list' objects>,83850,83850,0.354565,1.08754,12.09,37.09
+invindex,mpi,5,4,worker,3,2.932254,3,~,0,<method 'findall' of 're.Pattern' objects>,80001,80001,0.352422,0.352422,12.02,12.02
+invindex,mpi,5,4,worker,3,2.932254,4,~,0,<method 'setdefault' of 'dict' objects>,1176779,1176779,0.306174,0.306174,10.44,10.44
+invindex,mpi,5,4,worker,3,2.932254,5,jobs/inverted_index.py,13,map,1253263,1253263,0.263759,0.70896,9.0,24.18
+invindex,mpi,5,4,worker,3,2.932254,6,~,0,<method 'append' of 'list' objects>,1180386,1180386,0.236933,0.236933,8.08,8.08
+invindex,mpi,5,4,worker,3,2.932254,7,mapreduce/worker.py,96,execute_map_task,8,8,0.161206,2.804363,5.5,95.64
+invindex,mpi,5,4,worker,3,2.932254,8,mapreduce/splitter.py,73,read_split,80009,80009,0.13717,0.391446,4.68,13.35
+invindex,mpi,5,4,worker,3,2.932254,9,mapreduce/splitter.py,65,_strip_newline,80001,80001,0.074651,0.121158,2.55,4.13
+invindex,mpi,5,4,worker,3,2.932254,10,jobs/word_frequency.py,11,tokenize,80001,80001,0.062428,0.445201,2.13,15.18
+invindex,mpi,5,4,worker,3,2.932254,11,~,0,<built-in method time.sleep>,51,51,0.05241,0.05241,1.79,1.79
+invindex,mpi,5,4,worker,3,2.932254,12,mapreduce/worker.py,152,run_map_loop,1,1,0.051769,2.909447,1.77,99.22
+invindex,mpi,5,4,worker,4,2.934118,1,mapreduce/api.py,118,group_by_key,3915,3915,0.574155,1.114607,19.57,37.99
+invindex,mpi,5,4,worker,4,2.934118,2,~,0,<method 'findall' of 're.Pattern' objects>,80087,80087,0.343282,0.343282,11.7,11.7
+invindex,mpi,5,4,worker,4,2.934118,3,~,0,<method 'extend' of 'list' objects>,83997,83997,0.337872,1.053086,11.52,35.89
+invindex,mpi,5,4,worker,4,2.934118,4,~,0,<method 'setdefault' of 'dict' objects>,1178229,1178229,0.305875,0.305875,10.42,10.42
+invindex,mpi,5,4,worker,4,2.934118,5,jobs/inverted_index.py,13,map,1254563,1254563,0.257225,0.691235,8.77,23.56
+invindex,mpi,5,4,worker,4,2.934118,6,~,0,<method 'append' of 'list' objects>,1181847,1181847,0.234843,0.234843,8.0,8.0
+invindex,mpi,5,4,worker,4,2.934118,7,mapreduce/worker.py,96,execute_map_task,8,8,0.160296,2.730204,5.46,93.05
+invindex,mpi,5,4,worker,4,2.934118,8,mapreduce/splitter.py,73,read_split,80095,80095,0.131748,0.354593,4.49,12.09
+invindex,mpi,5,4,worker,4,2.934118,9,~,0,<built-in method time.sleep>,126,126,0.128522,0.128522,4.38,4.38
+invindex,mpi,5,4,worker,4,2.934118,10,mapreduce/splitter.py,65,_strip_newline,80087,80087,0.070095,0.112408,2.39,3.83
+invindex,mpi,5,4,worker,4,2.934118,11,jobs/word_frequency.py,11,tokenize,80087,80087,0.060028,0.43401,2.05,14.79
+invindex,mpi,5,4,worker,4,2.934118,12,~,0,<method 'readline' of '_io.BufferedReader' objects>,80087,80087,0.04997,0.04997,1.7,1.7

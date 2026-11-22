@@ -65,11 +65,23 @@ def fit_serial_fraction(e_values: List[float]) -> float:
     valid = [v for v in e_values if not math.isnan(v) and math.isfinite(v)]
     if not valid:
         return 0.1
-    # Use median across p in {2, 4, 8} as robust estimator; clamp to [0.001, 0.999] for Amdahl curve
-    s = sorted(valid)
+    pos = [v for v in valid if v > 0.0]
+    pool = pos if pos else valid
+    s = sorted(pool)
     mid = len(s) // 2
     med = s[mid] if len(s) % 2 == 1 else 0.5 * (s[mid - 1] + s[mid])
     return max(0.001, min(0.999, med))
+
+
+def clean_rank_str(val: Any) -> str:
+    if val is None or (isinstance(val, float) and math.isnan(val)):
+        return ""
+    s = str(val).strip()
+    if s in ("", "[]", "nan", "None"):
+        return ""
+    if s.endswith(".0"):
+        s = s[:-2]
+    return s
 
 
 def load_csv_if_exists(csv_path: Path, fallback_all: Optional[pd.DataFrame], exp_name: str) -> pd.DataFrame:
@@ -123,9 +135,14 @@ def aggregate_strong_scaling(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, 
         )
     )
 
-    # Sort: sequential first, then mpi by workers ascending
+    # Sort: wordfreq then invindex; sequential first, then mpi by workers ascending
+    grouped["job_order"] = grouped["job"].map({"wordfreq": 0, "invindex": 1}).fillna(2)
     grouped["engine_order"] = grouped["engine"].map({"sequential": 0, "mpi": 1}).fillna(2)
-    grouped = grouped.sort_values(["job", "engine_order", "workers"]).drop(columns=["engine_order"]).reset_index(drop=True)
+    grouped = (
+        grouped.sort_values(["job_order", "engine_order", "workers"])
+        .drop(columns=["job_order", "engine_order"])
+        .reset_index(drop=True)
+    )
 
     out_frames: List[pd.DataFrame] = []
     fit_summary: Dict[str, Dict[str, float]] = {}
@@ -230,8 +247,13 @@ def aggregate_weak_scaling(df: pd.DataFrame) -> pd.DataFrame:
             comm_seconds=("comm_seconds", "median"),
         )
     )
+    grouped["job_order"] = grouped["job"].map({"wordfreq": 0, "invindex": 1}).fillna(2)
     grouped["engine_order"] = grouped["engine"].map({"sequential": 0, "mpi": 1}).fillna(2)
-    grouped = grouped.sort_values(["job", "engine_order", "workers"]).drop(columns=["engine_order"]).reset_index(drop=True)
+    grouped = (
+        grouped.sort_values(["job_order", "engine_order", "workers"])
+        .drop(columns=["job_order", "engine_order"])
+        .reset_index(drop=True)
+    )
 
     out_frames: List[pd.DataFrame] = []
     for _job, g in grouped.groupby("job", sort=False):
@@ -263,8 +285,8 @@ def aggregate_fault_recovery(df: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame()
 
     df = df.copy()
-    df["failed_ranks_str"] = df["failed_ranks"].fillna("").astype(str).str.strip()
-    df["mode"] = df["failed_ranks_str"].apply(lambda s: "fault_injected" if s != "" and s != "[]" else "healthy")
+    df["failed_ranks_str"] = df["failed_ranks"].apply(clean_rank_str)
+    df["mode"] = df["failed_ranks_str"].apply(lambda s: "fault_injected" if s != "" else "healthy")
 
     numeric_cols = [
         "workers",
@@ -317,7 +339,15 @@ def aggregate_fault_recovery(df: pd.DataFrame) -> pd.DataFrame:
         )
         out_frames.append(g)
 
-    return pd.concat(out_frames, ignore_index=True)
+    out_df = pd.concat(out_frames, ignore_index=True)
+    out_df["job_order"] = out_df["job"].map({"wordfreq": 0, "invindex": 1}).fillna(2)
+    out_df["mode_order"] = out_df["mode"].map({"healthy": 0, "fault_injected": 1}).fillna(2)
+    out_df = (
+        out_df.sort_values(["job_order", "mpi_procs", "mode_order"])
+        .drop(columns=["job_order", "mode_order"])
+        .reset_index(drop=True)
+    )
+    return out_df
 
 
 def plot_strong_scaling_speedup(
