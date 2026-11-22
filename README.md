@@ -42,6 +42,16 @@ You also need an MPI runtime: Microsoft MPI on Windows, or OpenMPI/MPICH on Linu
 
 ## Run
 
+### One-Command Full Project Demo (Recommended)
+
+To run the entire project end-to-end (dataset generation, sequential baseline $T_1$, MPI scaling across 1, 2, 4, and 8 workers, output equivalence verification, fault-injection recovery, and unit tests) with a single command:
+
+```powershell
+python run_demo.py
+```
+
+### Individual CLI Commands
+
 ```powershell
 python data/prepare_datasets.py --help
 python baseline/run_sequential.py --job wordfreq --input data/samples --output output/seq_wordfreq.tsv
