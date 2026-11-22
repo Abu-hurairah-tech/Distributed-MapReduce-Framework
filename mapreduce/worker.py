@@ -54,6 +54,8 @@ class Worker:
         job: api.Job,
         use_combiner: bool = True,
         heartbeat_interval: float = HEARTBEAT_INTERVAL,
+        fail_rank: Optional[int] = None,
+        fail_after: int = 0,
         read_split_fn: Optional[Callable[[api.InputSplit], Iterator[Tuple[int, str]]]] = None,
     ) -> None:
         self.comm = comm
@@ -61,6 +63,9 @@ class Worker:
         self.job = job
         self.use_combiner = use_combiner
         self.heartbeat_interval = heartbeat_interval
+        self.should_fail = (fail_rank is not None) and (self.rank == fail_rank)
+        self.fail_after = max(0, int(fail_after))
+        self.failed_silently = False
         self.read_split_fn = _resolve_read_split(read_split_fn)
 
         # Stored intermediate output per task_id: task_id -> list[(key, value)]
@@ -77,6 +82,8 @@ class Worker:
         self.pending_requests.append(req)
 
     def _maybe_send_heartbeat(self, task_id: Optional[int]) -> None:
+        if self.failed_silently:
+            return
         now = time.perf_counter()
         if now - self.last_heartbeat >= self.heartbeat_interval:
             self.last_heartbeat = now
@@ -144,6 +151,10 @@ class Worker:
 
     def run_map_loop(self) -> Optional[object]:
         """Receive MapTasks from master until a control message (ShufflePlan or Shutdown) arrives."""
+        if self.should_fail and self.fail_after == 0:
+            self.failed_silently = True
+            return self.wait_for_shutdown()
+
         status = MPI.Status()
         while True:
             if self.comm.Iprobe(source=MASTER, tag=MPI.ANY_TAG, status=status):
@@ -155,6 +166,9 @@ class Worker:
                 if tag == TAG_TASK and isinstance(msg, MapTask):
                     done = self.execute_map_task(msg)
                     self._send_async(done, dest=MASTER, tag=TAG_DONE)
+                    if self.should_fail and self.stats.tasks_completed >= self.fail_after:
+                        self.failed_silently = True
+                        return self.wait_for_shutdown()
                 elif tag == TAG_CONTROL:
                     self._buffered_control = msg
                     return msg
@@ -217,8 +231,8 @@ class Worker:
             for i in range(sub_size):
                 cnt = recv_counts[i]
                 if cnt > 0:
-                     disp = recv_displs[i]
-                     received_pairs.extend(pickle.loads(mv[disp : disp + cnt]))
+                    disp = recv_displs[i]
+                    received_pairs.extend(pickle.loads(mv[disp : disp + cnt]))
             self.stats.comm_seconds += time.perf_counter() - t_comm
 
             t_comp = time.perf_counter()
@@ -232,7 +246,6 @@ class Worker:
             self.stats.comp_seconds += time.perf_counter() - t_comp
 
             t_comm = time.perf_counter()
-            # Estimate pickle overhead of the gathered payload so comm_seconds includes gather serialization
             _ = len(pickle.dumps(reduced_pairs, protocol=pickle.HIGHEST_PROTOCOL))
             self.stats.comm_seconds += time.perf_counter() - t_comm
             payload = (reduced_pairs, self.stats.comp_seconds, self.stats.comm_seconds)
@@ -243,12 +256,13 @@ class Worker:
                 sub_comm.Free()
 
     def wait_for_shutdown(self) -> Shutdown:
-        """Block until the master sends a Shutdown message."""
+        """Block until the master sends a Shutdown message, ignoring any queued MapTasks."""
         if isinstance(self._buffered_control, Shutdown):
             return self._buffered_control
+        status = MPI.Status()
         while True:
-            msg = self.comm.recv(source=MASTER, tag=TAG_CONTROL)
-            if isinstance(msg, Shutdown):
+            msg = self.comm.recv(source=MASTER, tag=MPI.ANY_TAG, status=status)
+            if status.Get_tag() == TAG_CONTROL and isinstance(msg, Shutdown):
                 return msg
 
     def run(self) -> None:
