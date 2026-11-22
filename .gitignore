@@ -21,3 +21,6 @@ benchmarks/results/raw/
 Thumbs.db
 .vscode/
 .idea/
+
+# Per-agent git worktrees
+.worktrees/
