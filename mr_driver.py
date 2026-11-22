@@ -137,6 +137,8 @@ def run_mpi_job(
                 comm=comm,
                 job=job,
                 use_combiner=use_combiner,
+                fail_rank=fail_rank,
+                fail_after=fail_after,
             )
             worker.run()
     finally:

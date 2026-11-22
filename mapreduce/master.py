@@ -116,6 +116,10 @@ class Master:
         self.completed: Dict[int, int] = {}
         self.task_results: Dict[int, TaskDone] = {}
 
+        # Fault-tolerance recovery tracking
+        self.recovery_start_time: Optional[float] = None
+        self.redispatched_pending: Set[int] = set()
+
         now = time.perf_counter()
         self.last_heard: Dict[int, float] = {w: now for w in self.all_workers}
         self.pending_requests: List[MPI.Request] = []
@@ -168,10 +172,61 @@ class Master:
                     self.in_flight.pop(msg.task_id, None)
                     self.completed[msg.task_id] = src
                     self.task_results[msg.task_id] = msg
+                    if msg.task_id in self.redispatched_pending:
+                        self.redispatched_pending.discard(msg.task_id)
+                        if (
+                            not self.redispatched_pending
+                            and self.recovery_start_time is not None
+                        ):
+                            self.metrics.recovery_seconds = now - self.recovery_start_time
         return received_any
 
+    def _check_timeouts(self) -> None:
+        """Detect workers silent for longer than timeout tau and re-queue their tasks."""
+        now = time.perf_counter()
+        timed_out: List[int] = []
+        for w in list(self.alive_workers):
+            if now - self.last_heard.get(w, now) > self.timeout:
+                timed_out.append(w)
+
+        for w in sorted(timed_out):
+            self._handle_worker_failure(w, now)
+
+    def _handle_worker_failure(self, worker: int, detected_at: float) -> None:
+        """Mark worker as failed, remove from alive set, and re-queue in-flight + completed tasks."""
+        if worker not in self.alive_workers:
+            return
+        self.alive_workers.remove(worker)
+        if not self.alive_workers:
+            raise RuntimeError("All MPI workers failed; cannot complete MapReduce job")
+
+        self.metrics.failed_ranks.append(worker)
+        self.idle_workers = deque(w for w in self.idle_workers if w != worker)
+        self.worker_in_flight.pop(worker, None)
+
+        to_requeue: List[int] = []
+        for tid, (w_rank, _) in list(self.in_flight.items()):
+            if w_rank == worker:
+                self.in_flight.pop(tid, None)
+                to_requeue.append(tid)
+
+        for tid, w_rank in list(self.completed.items()):
+            if w_rank == worker:
+                self.completed.pop(tid, None)
+                self.task_results.pop(tid, None)
+                to_requeue.append(tid)
+
+        to_requeue.sort()
+        if to_requeue and self.recovery_start_time is None:
+            self.recovery_start_time = detected_at
+
+        for tid in to_requeue:
+            self.pending_tasks.append(MapTask(task_id=tid, split=self.splits_by_id[tid]))
+            self.redispatched_pending.add(tid)
+            self.metrics.redispatched_tasks += 1
+
     def run_map_phase(self) -> Dict[int, int]:
-        """Run the dynamic Map task queue until all splits are acknowledged."""
+        """Run the dynamic Map task queue until all splits are acknowledged by alive workers."""
         t0 = time.perf_counter()
         total_tasks = len(self.splits)
         now = time.perf_counter()
@@ -181,6 +236,7 @@ class Master:
         while len(self.completed) < total_tasks:
             self._dispatch_available()
             got_msg = self._poll_messages()
+            self._check_timeouts()
             if len(self.completed) < total_tasks and not got_msg:
                 time.sleep(0.0005)
 
@@ -261,7 +317,7 @@ class Master:
         self.run_map_phase()
         final_pairs = self.run_shuffle_and_reduce()
         self.shutdown_workers(reason="done")
-        # Drain any trailing heartbeats that were in flight before ShufflePlan arrived
+        # Drain any trailing messages that were in flight before Shutdown
         self._poll_messages()
         api.write_output(final_pairs, output_path)
         self.metrics.total_seconds = time.perf_counter() - t0
