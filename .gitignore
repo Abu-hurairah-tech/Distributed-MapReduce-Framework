@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Datasets (500 MB - 2 GB) are generated/downloaded locally, never committed
+data/raw/
+data/samples/*.txt
+data/samples/*.log
+!data/samples/.gitkeep
+
+# Run outputs
+output/
+*.prof
+benchmarks/results/raw/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
